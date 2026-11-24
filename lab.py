@@ -45,12 +45,35 @@ def run():
     subprocess.run([tool('emulator', 'emulator'), '-avd', NAME], check=True)
 
 
-def compare(serial):
+def adb_command(serial):
     adb = [tool('adb', 'platform-tools')]
-    if serial:
-        adb += ['-s', serial]
-    else:
-        adb += ['-e']
+    return adb + (['-s', serial] if serial else ['-e'])
+
+
+def configure(serial):
+    """Set the active Android device name on the lab emulator and verify the OS."""
+    adb = adb_command(serial)
+
+    def shell(*args):
+        return subprocess.check_output(adb + ['shell', *args], text=True).strip()
+
+    if shell('getprop', 'ro.kernel.qemu') != '1' and shell('getprop', 'ro.boot.qemu') != '1':
+        raise SystemExit('Only an Android emulator may be configured.')
+    for key, expected in [('ro.build.version.release', '15'), ('ro.build.version.sdk', '35')]:
+        actual = shell('getprop', key)
+        if actual != expected:
+            raise SystemExit(f'{key}: expected {expected}, got {actual}')
+        print(f'{key}={actual}')
+    name = 'SM-S911B-LAB'
+    shell('settings', 'put', 'global', 'device_name', name)
+    if shell('settings', 'get', 'global', 'device_name') != name:
+        raise SystemExit('Device name verification failed.')
+    print(f'Active Android device_name={name}')
+    print('Hardware, build fingerprint and security properties remain genuine.')
+
+
+def compare(serial):
+    adb = adb_command(serial)
     output = subprocess.check_output(adb + ['shell', 'getprop'], text=True)
     actual = dict(re.findall(r'^\[([^\]]+)\]: \[(.*)\]$', output, re.M))
     expected = dict(line.split('=', 1) for line in (ROOT / 'profile.properties').read_text().splitlines()
@@ -66,7 +89,7 @@ def compare(serial):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action', choices=['setup', 'run', 'compare'])
+    p.add_argument('action', choices=['setup', 'run', 'configure', 'compare'])
     p.add_argument('--serial', help='ADB device serial for compare')
     args = p.parse_args()
     try:
@@ -74,6 +97,8 @@ def main():
             setup()
         elif args.action == 'run':
             run()
+        elif args.action == 'configure':
+            configure(args.serial)
         else:
             compare(args.serial)
     except subprocess.CalledProcessError as e:
