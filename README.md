@@ -1,11 +1,24 @@
-# Android 15 — Galaxy S23 layout test
+# Android 15 / dm1q reference lab
 
-This project boots a standard Android API 35 x86_64 virtual device in GitHub Actions, with a Galaxy S23-inspired 1080×2340 display. It is for application compatibility and UI tests, not Samsung firmware.
+Официальный Android 15 (API 35) в Android Emulator x86_64. Профиль Galaxy S23 SM-S911B используется только для сравнения свойств.
 
-The requested SM-S911B / dm1q identification and firmware are reference values only. The running image reports its actual ABI, build fingerprint and security state. Android Emulator does not provide Samsung One UI, physical Snapdragon/Adreno hardware, Knox or Samsung hardware-backed attestation. Editing properties alone cannot add these capabilities.
+## GitHub Actions
+Workflow Android 15 boot test запускается при push в main или вручную через Actions. Он устанавливает официальный образ Google APIs, загружает Android без окна, проверяет API 35, сравнивает свойства и сохраняет скриншот и логи в артефакт. После завершения задания виртуальная машина выключается: это не постоянный облачный телефон.
 
-## Run
+## Локальный запуск
+Требования: Python 3.9+, Android SDK Command-line Tools, JDK, аппаратная виртуализация и свободное место. Укажите ANDROID_HOME или ANDROID_SDK_ROOT.
 
-Open Actions → Android 15 emulator → Run workflow, or push changes to the repository. The workflow boots the emulator, checks API 35, and exports real system properties and a screenshot as a temporary artifact. GitHub-hosted runners stop the emulator at the end; this is not a persistent interactive phone.
+```sh
+python lab.py setup
+python lab.py run
+```
 
-The AVD uses SDK-provided system images; no Samsung proprietary image is bundled. RAM is set to 4096 MB and CPU to 4 virtual cores for CI. The screen profile is in `config.ini`.
+Во втором терминале после загрузки:
+```sh
+python lab.py compare
+```
+
+При нескольких эмуляторах укажите --serial emulator-5554 с фактическим serial.
+
+## Ограничения
+profile.properties — 61 эталонный параметр, не активная конфигурация. Это не One UI, не прошивка Samsung и не физическая платформа Snapdragon. Скрипт не подменяет системные свойства, состояние Verified Boot, Knox или аттестацию. Наличие ARM-трансляции зависит от официального образа.
