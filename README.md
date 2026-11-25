@@ -1,30 +1,14 @@
-# Android 15 / dm1q reference lab
+# Ipty — ReDroid Android 15
 
-Официальный Android 15 (API 35) в Android Emulator x86_64. Профиль Galaxy S23 SM-S911B используется только для сравнения свойств.
+Android 15 (API 35), официальный образ ReDroid, x86_64 на GitHub Actions. Это контейнер Android, не Samsung One UI. ADB доступен только на loopback хоста; для работы нужен Linux с Binder и Docker.
 
-## GitHub Actions
-Workflow Android 15 boot test запускается при push в main или вручную через Actions. Он устанавливает официальный образ Google APIs, загружает Android без окна, проверяет API 35, сравнивает свойства и сохраняет скриншот и логи в артефакт. После завершения задания виртуальная машина выключается: это не постоянный облачный телефон.
+## Запуск
+GitHub Actions: ReDroid Android 15 запускается при push в main или вручную. После теста контейнер выключается. Артефакт redroid-android15-results содержит реальные скриншоты и логи, если загрузка успешна.
 
-## Локальный запуск
-Требования: Python 3.9+, Android SDK Command-line Tools, JDK, аппаратная виртуализация и свободное место. Укажите ANDROID_HOME или ANDROID_SDK_ROOT.
+Локально на совместимом Linux: установите Docker Compose и adb, загрузите модуль binder_linux, затем выполните docker compose up -d и bash scripts/test-android.sh. Для остановки: docker compose down.
 
-```sh
-python lab.py setup
-python lab.py run
-```
+## Приложение
+Положите собственный тестовый APK в app/app.apk. При необходимости укажите имя пакета в app/package.txt. Скрипт устанавливает APK, запускает launcher activity и сохраняет results/app-launch.png. Если APK нет, сохраняется только results/android-home.png и сообщение app-status.txt. Не загружайте секретные APK в публичный репозиторий.
 
-Во втором терминале после загрузки:
-```sh
-python lab.py configure
-python lab.py compare
-```
-
-При нескольких эмуляторах укажите --serial emulator-5554 с фактическим serial.
-
-## Активные настройки
-Команда configure устанавливает системное отображаемое имя устройства SM-S911B-LAB через Android Settings, только на эмуляторе. Она также проверяет реальные значения ro.build.version.release=15 и ro.build.version.sdk=35. GitHub Actions вызывает команду после загрузки и записывает результат в active-settings.txt.
-
-Имя устройства — это активная настройка Android, а не изменение ro.product.model. Архитектура, отпечаток сборки и состояние безопасности остаются фактическими.
-
-## Ограничения
-profile.properties — 61 эталонный параметр, не активная конфигурация. Это не One UI, не прошивка Samsung и не физическая платформа Snapdragon. Скрипт не подменяет системные свойства, состояние Verified Boot, Knox или аттестацию. Наличие ARM-трансляции зависит от официального образа.
+## Профиль
+Разрешение 1080×2340, DPI 420 и отображаемое имя SM-S911B-LAB. profile.properties сохранён как справочный профиль; реальные свойства Android и состояние безопасности не подменяются. GitHub-hosted runner может не предоставлять Binder; тогда потребуется совместимый Linux runner.

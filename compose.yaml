@@ -1,0 +1,16 @@
+services:
+  android:
+    image: redroid/redroid:15.0.0_64only-latest
+    privileged: true
+    ports:
+      - "127.0.0.1:5555:5555"
+    volumes:
+      - android-data:/data
+    command:
+      - androidboot.redroid_gpu_mode=guest
+      - androidboot.redroid_width=1080
+      - androidboot.redroid_height=2340
+      - androidboot.redroid_dpi=420
+      - androidboot.redroid_fps=30
+volumes:
+  android-data:

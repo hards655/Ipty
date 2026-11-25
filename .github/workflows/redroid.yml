@@ -1,0 +1,41 @@
+name: ReDroid Android 15
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Android tools and check Binder
+        run: |
+          mkdir -p results
+          sudo apt-get update
+          sudo apt-get install -y adb
+          if ! sudo modprobe binder_linux devices=binder,hwbinder,vndbinder; then
+            sudo apt-get install -y "linux-modules-extra-$(uname -r)" || true
+            sudo modprobe binder_linux devices=binder,hwbinder,vndbinder
+          fi
+          grep -w binder /proc/filesystems
+      - name: Start Android 15
+        run: |
+          docker compose up -d
+          bash scripts/test-android.sh
+      - name: Collect diagnostics
+        if: always()
+        run: |
+          mkdir -p results
+          docker compose ps -a > results/containers.txt || true
+          docker compose logs --no-color > results/redroid.log 2>&1 || true
+          adb -s 127.0.0.1:5555 logcat -d -t 1000 > results/logcat.txt 2>&1 || true
+          docker compose down || true
+      - name: Upload actual screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redroid-android15-results
+          path: results/
